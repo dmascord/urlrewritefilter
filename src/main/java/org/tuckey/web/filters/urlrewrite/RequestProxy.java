@@ -52,6 +52,8 @@ import org.apache.commons.httpclient.ProxyHost;
 import org.apache.commons.httpclient.SimpleHttpConnectionManager;
 import org.apache.commons.httpclient.methods.EntityEnclosingMethod;
 import org.apache.commons.httpclient.methods.GetMethod;
+import org.apache.commons.httpclient.methods.DeleteMethod;
+import org.apache.commons.httpclient.methods.PutMethod;
 import org.apache.commons.httpclient.methods.InputStreamRequestEntity;
 import org.apache.commons.httpclient.methods.PostMethod;
 import org.apache.commons.httpclient.methods.RequestEntity;
@@ -109,7 +111,8 @@ public class RequestProxy {
         log.info("checking url");
         final URL url;
         try {
-            url = new URL(target);
+			// make sure the target has spaces escaped correctly
+            url = new URL(target.replaceAll(" ","%20"));
         } catch (MalformedURLException e) {
             log.error("The provided target url is not valid.", e);
             return;
@@ -206,6 +209,13 @@ public class RequestProxy {
             method = postMethod;
         } else if ("GET".equalsIgnoreCase(methodName)) {
             method = new GetMethod();
+        } else if ("DELETE".equalsIgnoreCase(methodName)) {
+            method = new DeleteMethod();
+        } else if ("PUT".equalsIgnoreCase(methodName)) {
+            PutMethod putMethod = new PutMethod();
+            InputStreamRequestEntity inputStreamRequestEntity = new InputStreamRequestEntity(hsRequest.getInputStream());
+            putMethod.setRequestEntity(inputStreamRequestEntity);
+            method = putMethod;
         } else {
             log.warn("Unsupported HTTP method requested: " + hsRequest.getMethod());
             return null;
@@ -327,3 +337,4 @@ class RequestProxyCustomRequestEntity  implements RequestEntity {
         return this.contentLength;
     }
 }
+
