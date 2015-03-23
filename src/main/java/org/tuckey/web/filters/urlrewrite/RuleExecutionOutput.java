@@ -49,7 +49,9 @@ public class RuleExecutionOutput {
     private boolean ruleMatched = false;
     private boolean stopFilterMatch = false;
     private boolean noSubstitution = false;
+    private boolean dropCookies = true;
     private RewriteMatch rewriteMatch;
+
 
     /**
      * Will perform the action defined by the rule ie, redirect or passthrough.
@@ -169,6 +171,14 @@ public class RuleExecutionOutput {
 
     public void setNoSubstitution(boolean noSubstitution) {
     	this.noSubstitution = noSubstitution;
+    }
+
+    public void setDropCookies(boolean forwardCookies) {
+      this.dropCookies = forwardCookies;
+    }
+
+    public boolean shouldDropCookies() {
+      return dropCookies;
     }
 
 }

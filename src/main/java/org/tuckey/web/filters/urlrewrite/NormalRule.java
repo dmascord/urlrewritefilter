@@ -41,6 +41,7 @@ import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 
@@ -66,10 +67,12 @@ public class NormalRule extends RuleBase implements Rule {
     public static final short TO_TYPE_POST_INCLUDE = 5;
     public static final short TO_TYPE_PROXY = 6;
 
+    private boolean dropCookies = true;
     private boolean encodeToUrl = false;
     private boolean queryStringAppend = false;
     private String toContextStr = null;
     private ServletContext toServletContext = null;
+
 
     /**
      * Constructor.
@@ -94,6 +97,7 @@ public class NormalRule extends RuleBase implements Rule {
             // no match, or run/set only match
             return null;
         }
+        ruleExecutionOutput.setDropCookies(dropCookies);
         if ( queryStringAppend && hsRequest.getQueryString() != null && hsRequest.getQueryString().length() > 0) {
             String target = ruleExecutionOutput.getReplacedUrl();
             if (target.contains("?")) {
@@ -238,5 +242,9 @@ public class NormalRule extends RuleBase implements Rule {
     
     public boolean getQueryStringAppend() {
     	return queryStringAppend;
+    }
+    
+    public void setDropCookies(String value) {
+        dropCookies = "true".equalsIgnoreCase(value);
     }
 }

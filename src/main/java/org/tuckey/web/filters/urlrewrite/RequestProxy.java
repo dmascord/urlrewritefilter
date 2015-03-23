@@ -34,6 +34,16 @@
  */
 package org.tuckey.web.filters.urlrewrite;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.util.Enumeration;
+
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
 import org.apache.commons.httpclient.Header;
 import org.apache.commons.httpclient.HostConfiguration;
 import org.apache.commons.httpclient.HttpClient;
@@ -47,15 +57,6 @@ import org.apache.commons.httpclient.methods.PostMethod;
 import org.apache.commons.httpclient.methods.RequestEntity;
 import org.tuckey.web.filters.urlrewrite.utils.Log;
 import org.tuckey.web.filters.urlrewrite.utils.StringUtils;
-
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.net.MalformedURLException;
-import java.net.URL;
-import java.util.Enumeration;
 
 /**
  * This class is responsible for a proxy http request.
@@ -73,6 +74,8 @@ public class RequestProxy {
 
     /**
      * This method performs the proxying of the request to the target address.
+     * 
+     * Cookies will not be forwarded to client.
      *
      * @param target     The target address. Has to be a fully qualified address. The request is send as-is to this address.
      * @param hsRequest  The request data which should be send to the
@@ -80,6 +83,19 @@ public class RequestProxy {
      * @throws java.io.IOException Passed on from the connection logic.
      */
     public static void execute(final String target, final HttpServletRequest hsRequest, final HttpServletResponse hsResponse) throws IOException {
+        execute(target, hsRequest, hsResponse, true);
+    }
+
+    /**
+     * This method performs the proxying of the request to the target address.
+     *
+     * @param target      The target address. Has to be a fully qualified address. The request is send as-is to this address.
+     * @param hsRequest   The request data which should be send to the
+     * @param hsResponse  The response data which will contain the data returned by the proxied request to target.
+     * @Param dropCookies Determinate whether cookies should be dropped (when {@code true}) or forwarded to client.
+     * @throws java.io.IOException Passed on from the connection logic.
+     */
+    public static void execute(final String target, final HttpServletRequest hsRequest, final HttpServletResponse hsResponse, boolean dropCookies) throws IOException {
         if ( log.isInfoEnabled() ) {
             log.info("execute, target is " + target);
             log.info("response commit state: " + hsResponse.isCommitted());
@@ -138,7 +154,7 @@ public class RequestProxy {
         }
 
         //copy the target response headers to our response
-        setupResponseHeaders(targetRequest, hsResponse);
+        setupResponseHeaders(targetRequest, hsResponse, dropCookies);
 
         InputStream originalResponseStream = targetRequest.getResponseBodyAsStream();
         //the body might be null, i.e. for responses with cache-headers which leave out the body
@@ -232,7 +248,7 @@ public class RequestProxy {
         return method;
     }
 
-    private static void setupResponseHeaders(HttpMethod httpMethod, HttpServletResponse hsResponse) {
+    private static void setupResponseHeaders(HttpMethod httpMethod, HttpServletResponse hsResponse, boolean dropCookies) {
         if ( log.isInfoEnabled() ) {
             log.info("setupResponseHeaders");
             log.info("status text: " + httpMethod.getStatusText());
@@ -249,12 +265,14 @@ public class RequestProxy {
                 continue;
             } else if ("transfer-encoding".equalsIgnoreCase(h.getName())) {
                 continue;
-            } else if (h.getName().toLowerCase().startsWith("cookie")) {
-                //retrieving a cookie which sets the session id will change the calling session: bad! So we skip this header.
-                continue;
-            } else if (h.getName().toLowerCase().startsWith("set-cookie")) {
-                //retrieving a cookie which sets the session id will change the calling session: bad! So we skip this header.
-                continue;
+            } else if (dropCookies) {
+                if (h.getName().toLowerCase().startsWith("cookie")) {
+                  //retrieving a cookie which sets the session id will change the calling session: bad! So we skip this header.
+                  continue;
+                } else if (h.getName().toLowerCase().startsWith("set-cookie")) {
+                  //retrieving a cookie which sets the session id will change the calling session: bad! So we skip this header.
+                  continue;
+                }
             }
 
             hsResponse.addHeader(h.getName(), h.getValue());
