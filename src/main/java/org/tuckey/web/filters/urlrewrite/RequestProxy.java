@@ -127,7 +127,7 @@ public class RequestProxy {
 
         if ( log.isInfoEnabled() ) log.info("config is " + config.toString());
 
-        final HttpMethod targetRequest = setupProxyRequest(hsRequest, url);
+        final HttpMethod targetRequest = setupProxyRequest(hsRequest, url,dropCookies);
         if (targetRequest == null) {
             log.error("Unsupported request method found: " + hsRequest.getMethod());
             return;
@@ -196,7 +196,7 @@ public class RequestProxy {
         return proxyHost;
     }
 
-    private static HttpMethod setupProxyRequest(final HttpServletRequest hsRequest, final URL targetUrl) throws IOException {
+    private static HttpMethod setupProxyRequest(final HttpServletRequest hsRequest, final URL targetUrl, boolean dropCookies) throws IOException {
         final String methodName = hsRequest.getMethod();
         final HttpMethod method;
         if ("POST".equalsIgnoreCase(methodName)) {
@@ -230,7 +230,7 @@ public class RequestProxy {
                     //The response stream should (afaik) be deflated. If our http client does not support
                     //gzip then the response can not be unzipped and is delivered wrong.
                     continue;
-                } else if (headerName.toLowerCase().startsWith("cookie")) {
+                } else if (dropCookies && headerName.toLowerCase().startsWith("cookie")) {
                     //fixme : don't set any cookies in the proxied request, this needs a cleaner solution
                     continue;
                 }
